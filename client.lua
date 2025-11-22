@@ -24,7 +24,7 @@ Config.clothingCheckDelay = 1000
 -- ⚠️ ДОБАВИТЬ СЮДА ВСЕ ПИСТОЛЕТЫ КОТОРЫЕ ИСПОЛЬЗУЮТСЯ НА СЕРВЕРЕ
 -- ============================================================
 Config.holsterWeapons = {
-    -- Примеры (добавить/уберать нужные):
+    -- Примеры (добавить/убрать нужные):
     [GetHashKey("WEAPON_PISTOL")] = true,
 }
 
@@ -301,4 +301,5 @@ RegisterCommand("restartholster", function()
     Citizen.Wait(500)
     StartHolsterScript()
 end, false)
+
 
