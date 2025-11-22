@@ -10,28 +10,7 @@ Config.holsterComponent = 7  -- ⚠️ ЗАМЕНИТЬ НА СВОЙ НОМЕР
 -- ⚠️ ДОБАВИТЬ ВСЕ ПАРЫ КОБУР КОТОРЫЕ ЕСТЬ НА СЕРВЕРЕ
 Config.holsterPairs = {
     -- Пара 1: Например, кобура на поясе
-    {
-        full = {drawable = 0, texture = 0},   -- ⚠️ ID заполненной кобуры на поясе
-        empty = {drawable = 1, texture = 0}   -- ⚠️ ID пустой кобуры на поясе
-    },
-    
-    -- Пара 2: Например, кобура на ноге
-    {
-        full = {drawable = 5, texture = 0},   -- ⚠️ ID заполненной кобуры на ноге
-        empty = {drawable = 6, texture = 0}   -- ⚠️ ID пустой кобуры на ноге
-    },
-    
-    -- Пара 3: Например, кобура на груди
-    {
-        full = {drawable = 9, texture = 0},   -- ⚠️ ID заполненной кобуры на груди
-        empty = {drawable = 10, texture = 0}  -- ⚠️ ID пустой кобуры на груди
-    },
-    
-    -- ⚠️ ДОБАВИТЬ СТОЛЬКО ПАР СКОЛЬКО НУЖНО, КОПИРУЯ ЭТОТ БЛОК:
-    -- {
-    --     full = {drawable = X, texture = Y},
-    --     empty = {drawable = Z, texture = W}
-    -- },
+    {full = 0, empty = 1},
 }
 
 -- Задержка проверки оружия
@@ -45,16 +24,8 @@ Config.clothingCheckDelay = 1000
 -- ⚠️ ДОБАВИТЬ СЮДА ВСЕ ПИСТОЛЕТЫ КОТОРЫЕ ИСПОЛЬЗУЮТСЯ НА СЕРВЕРЕ
 -- ============================================================
 Config.holsterWeapons = {
-    -- Примеры (добавь/убери нужные):
+    -- Примеры (добавить/уберать нужные):
     [GetHashKey("WEAPON_PISTOL")] = true,
-    [GetHashKey("WEAPON_COMBATPISTOL")] = true,
-    [GetHashKey("WEAPON_APPISTOL")] = true,
-    [GetHashKey("WEAPON_PISTOL50")] = true,
-
-    -- ⚠️ ДОБАВИТЬ КАСТОМНЫЕ ПИСТОЛЕТЫ ЕСЛИ ЕСТЬ:
-    -- [GetHashKey("WEAPON_GLOCK")] = true,
-    -- [GetHashKey("WEAPON_M1911")] = true,
-    -- И так далее...
 }
 
 -- Оружие которое НЕ влияет на кобуру (нож, фонарик и т.д.)
@@ -76,6 +47,7 @@ local currentWeapon = nil          -- Текущее оружие в руках
 local isHolsterEmpty = false       -- Состояние кобуры (false = заполнена, true = пуста)
 local isScriptActive = false       -- Активен ли скрипт
 local activePair = nil             -- Текущая пара кобуры на игроке
+local currentTexture = nil 
 
 -- ============================================================
 -- ФУНКЦИЯ: Вывод отладки
@@ -97,20 +69,20 @@ local function HasHolster()
     -- Проверяем все пары кобур
     for index, pair in pairs(Config.holsterPairs) do
         -- Проверяем заполненную кобуру
-        if currentDrawable == pair.full.drawable and currentTexture == pair.full.texture then
+        if currentDrawable == pair.full then
             DebugPrint("Найдена заполненная кобура (пара #" .. index .. ")")
-            return true, pair, false  -- true = есть кобура, pair = активная пара, false = не пустая
+            return true, pair, false, texture
         end
         
         -- Проверяем пустую кобуру
-        if currentDrawable == pair.empty.drawable and currentTexture == pair.empty.texture then
+        if currentDrawable == pair.empty then
             DebugPrint("Найдена пустая кобура (пара #" .. index .. ")")
-            return true, pair, true   -- true = есть кобура, pair = активная пара, true = пустая
+            return true, pair, true, texture   -- true = есть кобура, pair = активная пара, true = пустая
         end
     end
     
     DebugPrint("Кобура не найдена на игроке")
-    return false, nil, nil  -- Кобуры нет
+    return false, nil, nil, nil
 end
 
 -- ============================================================
@@ -125,12 +97,12 @@ local function ChangeHolster(isEmpty)
     
     -- Проверяем валидность ID кобур
     if isEmpty then
-        if activePair.empty.drawable < 0 or activePair.empty.texture < 0 then
+        if activePair.empty < 0 then
             DebugPrint("ОШИБКА: неверные ID пустой кобуры!")
             return
         end
     else
-        if activePair.full.drawable < 0 or activePair.full.texture < 0 then
+        if activePair.full < 0 then
             DebugPrint("ОШИБКА: неверные ID заполненной кобуры!")
             return
         end
@@ -145,12 +117,12 @@ local function ChangeHolster(isEmpty)
     
     if isEmpty then
         -- Ставим ПУСТУЮ кобуру из активной пары
-        SetPedComponentVariation(ped, Config.holsterComponent, activePair.empty.drawable, activePair.empty.texture, 0)
+        SetPedComponentVariation(ped, Config.holsterComponent, activePair.empty, currentTexture, 0)
         isHolsterEmpty = true
         DebugPrint("Кобура теперь ПУСТАЯ")
     else
         -- Ставим ЗАПОЛНЕННУЮ кобуру из активной пары
-        SetPedComponentVariation(ped, Config.holsterComponent, activePair.full.drawable, activePair.full.texture, 0)
+        SetPedComponentVariation(ped, Config.holsterComponent, activePair.full, currentTexture, 0)
         isHolsterEmpty = false
         DebugPrint("Кобура теперь ЗАПОЛНЕННАЯ")
     end
@@ -198,7 +170,7 @@ local function StartHolsterScript()
     end
     
     -- Проверяем есть ли кобура на игроке
-    local hasHolster, pair, isEmpty = HasHolster()
+    local hasHolster, pair, isEmpty, texture = HasHolster()
     
     if not hasHolster then
         DebugPrint("Кобуры нет - скрипт НЕ запускается")
@@ -209,6 +181,7 @@ local function StartHolsterScript()
     activePair = pair
     isHolsterEmpty = isEmpty
     isScriptActive = true
+    currentTexture = texture
     
     DebugPrint("Скрипт кобуры ЗАПУЩЕН")
     DebugPrint("Активная пара определена, начальное состояние: " .. (isEmpty and "ПУСТАЯ" or "ЗАПОЛНЕННАЯ"))
@@ -254,7 +227,7 @@ Citizen.CreateThread(function()
     while true do
         Citizen.Wait(Config.clothingCheckDelay)
         
-        local hasHolster, currentPair, isEmpty = HasHolster()
+        local hasHolster, currentPair, isEmpty, texture = HasHolster()
         
         -- Если кобуры нет и скрипт активен - останавливаем
         if not hasHolster and isScriptActive then
@@ -270,10 +243,10 @@ Citizen.CreateThread(function()
                 StartHolsterScript()
             else
                 -- Скрипт активен - проверяем не сменилась ли кобура на другую пару
-                if currentPair ~= activePair then
+                if currentPair ~= activePair or texture ~= currentTexture then
                     DebugPrint("Кобура изменена на другую модель - перезапускаем с новой парой")
                     StopHolsterScript()
-                    Citizen.Wait(100)  -- Небольшая задержка перед перезапуском
+                    Citizen.Wait(100)
                     StartHolsterScript()
                 end
             end
@@ -309,7 +282,7 @@ RegisterCommand("testholster", function()
     print("activePair: " .. tostring(activePair ~= nil))
     
     -- Проверяем текущую кобуру
-    local hasHolster, pair, isEmpty = HasHolster()
+    local hasHolster, pair, isEmpty, texture = HasHolster()
     print("На игроке кобура: " .. tostring(hasHolster))
     if hasHolster then
         print("Состояние: " .. (isEmpty and "ПУСТАЯ" or "ЗАПОЛНЕННАЯ"))
@@ -328,3 +301,4 @@ RegisterCommand("restartholster", function()
     Citizen.Wait(500)
     StartHolsterScript()
 end, false)
+
