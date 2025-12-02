@@ -71,13 +71,13 @@ local function HasHolster()
         -- Проверяем заполненную кобуру
         if currentDrawable == pair.full then
             DebugPrint("Найдена заполненная кобура (пара #" .. index .. ")")
-            return true, pair, false, texture
+            return true, pair, false, currentTexture
         end
         
         -- Проверяем пустую кобуру
         if currentDrawable == pair.empty then
             DebugPrint("Найдена пустая кобура (пара #" .. index .. ")")
-            return true, pair, true, texture   -- true = есть кобура, pair = активная пара, true = пустая
+            return true, pair, true, currentTexture   -- true = есть кобура, pair = активная пара, true = пустая
         end
     end
     
@@ -301,5 +301,6 @@ RegisterCommand("restartholster", function()
     Citizen.Wait(500)
     StartHolsterScript()
 end, false)
+
 
 
